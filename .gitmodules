@@ -1,0 +1,6 @@
+[submodule "modules/jai-vulkan"]
+	path = modules/jai-vulkan
+	url = https://gitlab.com/Stowy/jai-vulkan.git
+[submodule "modules/jai-imgui"]
+	path = modules/jai-imgui
+	url = https://gitlab.com/Stowy/jai-imgui.git

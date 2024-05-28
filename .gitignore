@@ -1,0 +1,10 @@
+.build/
+run/debug/*
+run/release/*
+run/optimized/*
+!run/debug/SDL2.dll
+!run/debug/VMA.dll
+!run/release/SDL2.dll
+!run/release/VMA.dll
+!run/optimized/SDL2.dll
+!run/optimized/VMA.dll
