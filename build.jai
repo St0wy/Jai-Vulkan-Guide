@@ -32,7 +32,7 @@ Build :: ()
     	}
     }
     
-    target_options.output_executable_name = "voxels";
+    target_options.output_executable_name = "hello-vulkan";
 	set_build_options(target_options, w);
     
     // There are 3 target types in this program :
