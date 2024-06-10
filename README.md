@@ -30,6 +30,6 @@ It also has a modified ImGui module that uses version 1.90.7 of the docking bran
 
 VMA uses bindings that where posted on the Jai Discord that I then modified : https://gitlab.com/Stowy/jai-vma.
 
-As for SDL, it just has small modifications,
+As for SDL, it just has small modifications to work with this project.
 
 The ImGui SDL2 and Vulkan backends are translated by hands in this project, feel free to copy the files if you need them in another project.
