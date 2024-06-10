@@ -4,3 +4,6 @@
 [submodule "modules/jai-imgui"]
 	path = modules/jai-imgui
 	url = https://gitlab.com/Stowy/jai-imgui.git
+[submodule "modules/jai-vma"]
+	path = modules/jai-vma
+	url = https://gitlab.com/Stowy/jai-vma.git

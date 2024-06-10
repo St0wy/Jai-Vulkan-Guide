@@ -46,7 +46,7 @@ ImGui_ImplVulkan_Init :: (info: *ImGui_ImplVulkan_InitInfo) -> bool
     assert(info.Queue != VK_NULL_HANDLE);
     assert(info.DescriptorPool != VK_NULL_HANDLE);
     assert(info.MinImageCount >= 2);
-    assert(info.ImageCount >= info.MinImageCount);
+    assert(info.ImageCount >= info.MinImageCount, tprint("ImageCount (%) should be superior or equal to MinImageCount (%)", info.ImageCount, info.MinImageCount));
     if (info.UseDynamicRendering == false)
         assert(info.RenderPass != VK_NULL_HANDLE);
         

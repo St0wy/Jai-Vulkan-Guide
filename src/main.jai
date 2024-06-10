@@ -8,7 +8,7 @@
 // Import of local modules
 #import "SDL"(VULKAN = true);
 #import "jai-vulkan";
-#import "VMA";
+#import "jai-vma";
 ImGui :: #import "jai-imgui";
 for_expansion :: ImGui.for_expansion;
 

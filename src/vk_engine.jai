@@ -42,6 +42,8 @@ VulkanEngine :: struct
 	resize_requested: bool;
 	show_demo_window: bool;
 	show_demo_window = true;
+	dpi_scale: float32;
+	dpi_scale = 1.0;
 }
 
 InitVulkanEngine :: (width: s32, height: s32) -> *VulkanEngine 
@@ -54,18 +56,20 @@ InitVulkanEngine :: (width: s32, height: s32) -> *VulkanEngine
 	}
 	
 	vulkan_engine := New(VulkanEngine);
-	vulkan_engine.window_extent = .{xx width, xx height};
 
 	sdl_flags: SDL_WindowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | 
 		SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_VULKAN;
-	vulkan_engine.window = SDL_CreateWindow("Hello Vulkan with Jai",
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, sdl_flags);
-
+	vulkan_engine.window = SDL_CreateWindow("Hello Vulkan with Jai", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, sdl_flags);
 	if vulkan_engine.window == null 
 	{
 		log_error("Could not create window: %\n", to_string(SDL_GetError()));
 		return null;
 	}
+
+	pixel_width, pixel_height: s32;
+	SDL_Vulkan_GetDrawableSize(vulkan_engine.window, *pixel_width, *pixel_height);
+	vulkan_engine.dpi_scale = cast(float) pixel_width / cast(float) width;
+	vulkan_engine.window_extent = .{xx pixel_width, xx pixel_height};
 
 	result := InitVulkan(vulkan_engine);
 	if !result 
@@ -393,13 +397,28 @@ InitImGui :: (vulkan_engine: *VulkanEngine)
     init_info.UseDynamicRendering = true;
     init_info.PipelineRenderingCreateInfo = pipeline_rendering_info;
     init_info.Subpass = 0;
-    init_info.MinImageCount = xx swapchain_images.count; // TODO : Check if this is correct
-    init_info.ImageCount = xx frames.count;
+    init_info.MinImageCount = xx swapchain_images.count;
+    init_info.ImageCount = xx swapchain_images.count;
     init_info.MSAASamples = ._1_BIT;
     init_info.Allocator = null;
     init_info.CheckVkResultFn = CheckImGuiVkResult;
 	result = ImGui_ImplVulkan_Init(*init_info);
 	assert(result, "Could not init ImGui Vulkan backend");
+
+	imgui_style := ImGui.GetStyle();
+	imgui_style.ScaleAllSizes(imgui_style, dpi_scale);
+	// io.FontGlobalScale = dpi_scale;
+	// io.DisplayFrameBufferScale  = 1;
+	
+	FONT_SIZE :: 13.0;
+	scaled_font_size := cast(float32) cast(s32) (FONT_SIZE * dpi_scale);
+	
+	font_cfg: ImGui.ImFontConfig;
+	ImGui.ImFontConfig.Constructor(*font_cfg);
+    font_cfg.FontDataOwnedByAtlas = false;
+	font_cfg.OversampleH = 3;
+	font_cfg.OversampleV = 3;
+	font_cfg.SizePixels = scaled_font_size;
 }
 
 CheckImGuiVkResult :: (err: VkResult)
@@ -1320,13 +1339,48 @@ ResizeSwapchain :: (vulkan_engine: *VulkanEngine)
 	resize_requested = false;
 }
 
+GetBiggestDisplaySize :: () -> u32, u32
+{
+	width: u32;
+	height: u32;
+	for i: 0..SDL_GetNumVideoDisplays() - 1
+	{
+		display_mode_count := SDL_GetNumDisplayModes(i);
+		if display_mode_count < 1 
+		{
+			log("SDL_GetNumDisplayModes failed: %\n", to_string(SDL_GetError()));
+			return 0, 0;
+		}
+
+		
+		for j: 0..display_mode_count - 1
+		{
+			mode: SDL_DisplayMode;
+			if SDL_GetDisplayMode(i, j, *mode) != 0
+			{
+				log("SDL_GetDisplayMode failed: %\n", to_string(SDL_GetError()));
+				return 0, 0;
+			}
+
+			if xx mode.w > width 
+			{
+				width = xx mode.w;
+				height = xx mode.h;
+			}
+		}
+	}
+
+	return width, height;
+}
+
 CreateDrawImage :: (vulkan_engine: *VulkanEngine)
 {
 	using vulkan_engine;
 	
-	assert(window_extent.width != 0 && window_extent.height != 0, "Window should be bigger than 0");
+	display_width, display_height := GetBiggestDisplaySize();
+	assert(display_width > 0 && display_height > 0, "Could not get the biggest display size");
 	
-	draw_image_extent := VkExtent3D.{window_extent.width, window_extent.height, 1};
+	draw_image_extent := VkExtent3D.{display_width, display_height, 1};
 	draw_image.image_format = .R16G16B16A16_SFLOAT;
 	draw_image.image_extent = draw_image_extent;
 	

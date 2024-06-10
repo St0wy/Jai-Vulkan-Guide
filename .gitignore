@@ -8,3 +8,4 @@ run/optimized/*
 !run/release/VMA.dll
 !run/optimized/SDL2.dll
 !run/optimized/VMA.dll
+imgui.ini
