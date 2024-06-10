@@ -1073,8 +1073,7 @@ CreateSwapchain :: (vulkan_engine: *VulkanEngine)
 	swapchain_image_format = surface_format.format;
 	swapchain_extent = extent;
 	
-	frame_count := GetFrameCountFromPresentMode(present_mode);
-	array_resize(*frames, frame_count);
+	array_resize(*frames, image_count);
 }
 
 CreateSwapchainImageViews :: (vulkan_engine: *VulkanEngine)
@@ -1140,23 +1139,6 @@ InitCommands :: (vulkan_engine: *VulkanEngine)
 		
 		result = vkAllocateCommandBuffers(device, *cmd_alloc_info, *it.main_command_buffer);
 		assert(result == .SUCCESS, "Could not allocate command buffer.");
-	}
-}
-
-GetFrameCountFromPresentMode :: (present_mode: VkPresentModeKHR) -> s64
-{
-	if present_mode ==
-	{
-		case .MAILBOX_KHR;
-			return 3;
-		case .FIFO_KHR; #through;
-		case .FIFO_RELAXED_KHR;
-			return 2;
-		case .IMMEDIATE_KHR;
-			return 1;
-		case;
-			assert(false, "You passed a present mode that is not supported");
-			return 0;
 	}
 }
 
