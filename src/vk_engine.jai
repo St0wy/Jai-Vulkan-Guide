@@ -339,9 +339,7 @@ Draw :: (vulkan_engine: *VulkanEngine, delta_time: float64)
 
 AllocImGui :: (sz: u64, user_data: *void) -> *void #c_call
 {
-	allocator := cast(*Allocator)user_data;
 	new_context: Context;
-	new_context.allocator = <<allocator;
 	push_context new_context
 	{
 		return alloc(xx sz);
@@ -350,9 +348,7 @@ AllocImGui :: (sz: u64, user_data: *void) -> *void #c_call
 
 FreeImGui :: (ptr: *void, user_data: *void) #c_call
 {
-	allocator := cast(*Allocator)user_data;
 	new_context: Context;
-	new_context.allocator = <<allocator;
 	push_context new_context
 	{
 		free(ptr);
@@ -363,7 +359,7 @@ InitImGui :: (vulkan_engine: *VulkanEngine)
 {
 	using vulkan_engine;
 	
-	ImGui.SetAllocatorFunctions(AllocImGui, FreeImGui, *context.allocator);
+	ImGui.SetAllocatorFunctions(AllocImGui, FreeImGui);
 	ImGui.CreateContext();
 	
 	io := ImGui.GetIO();
