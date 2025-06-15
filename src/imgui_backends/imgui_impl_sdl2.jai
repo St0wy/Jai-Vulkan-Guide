@@ -257,6 +257,7 @@ SDL_HAS_CAPTURE_AND_GLOBAL_MOUSE :: OS != .ANDROID && OS != .MACOS;
 ImGui_ImplSDL2_Data :: struct
 {
 	Window: *SDL_Window;
+	WindowID: u32;
 	Renderer: *SDL_Renderer;
 	Time: u64;
 	ClipboardTextData: *u8;
@@ -303,7 +304,7 @@ ImGui_ImplSDL2_SetClipboardText :: (_: *void, text: *u8) #c_call
 	SDL_SetClipboardText(text);
 }
 
-ImGui_ImplSDL2_SetPlatformImeData :: (viewport: *ImGui.Viewport, data: *ImGui.PlatformImeData) #c_call
+ImGui_ImplSDL2_PlatformSetImeData :: (ctx: *ImGui.ImGuiContext, viewport: *ImGui.Viewport, data: *ImGui.PlatformImeData) #c_call
 {
 	if !data.WantVisible then return;
 	
@@ -481,6 +482,7 @@ ImGui_ImplSDL2_Init :: (window: *SDL_Window, renderer: *SDL_Renderer, sdl_gl_con
 	}
 	
 	bd.Window = window;
+	bd.WindowID = SDL_GetWindowID(window);
 	bd.Renderer = renderer;
 	
 	bd.MouseCanUseGlobalState = mouse_can_use_global_state;
@@ -493,14 +495,16 @@ ImGui_ImplSDL2_Init :: (window: *SDL_Window, renderer: *SDL_Renderer, sdl_gl_con
 	{
 		bd.MouseCanReportHoveredViewport = false;
 	}
+
+	platform_io := ImGui.GetPlatformIO();
+	platform_io.Platform_SetImeDataFn = ImGui_ImplSDL2_PlatformSetImeData;
 	
 	bd.WantUpdateMonitors = true;
 	
 	io.SetClipboardTextFn = ImGui_ImplSDL2_SetClipboardText;
     io.GetClipboardTextFn = ImGui_ImplSDL2_GetClipboardText;
     io.ClipboardUserData = null;
-    io.SetPlatformImeDataFn = ImGui_ImplSDL2_SetPlatformImeData;
-    
+
     bd.GamepadMode = .AutoFirst;
     bd.WantUpdateGamepadsList = true;
     
@@ -530,8 +534,8 @@ ImGui_ImplSDL2_Init :: (window: *SDL_Window, renderer: *SDL_Renderer, sdl_gl_con
     SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
     // These hints are not set in the SDL bindings, maybe I should add them
     // but IDK if the version has it
-	// SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
-	// SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
+	SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+	SDL_SetHint(SDL_HINT_MOUSE_AUTO_CAPTURE, "0");
 	
 	// TODO Add that once and if viewports functions are done
 	// if (io.ConfigFlags_ & .ViewportsEnable) && (io.BackendFlags_ & .PlatformHasViewports)

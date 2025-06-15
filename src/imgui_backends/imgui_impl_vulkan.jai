@@ -46,7 +46,7 @@ ImGui_ImplVulkan_Init :: (info: *ImGui_ImplVulkan_InitInfo) -> bool
     assert(info.Queue != VK_NULL_HANDLE);
     assert(info.DescriptorPool != VK_NULL_HANDLE);
     assert(info.MinImageCount >= 2);
-    assert(info.ImageCount >= info.MinImageCount, tprint("ImageCount (%) should be superior or equal to MinImageCount (%)", info.ImageCount, info.MinImageCount));
+    assert(info.ImageCount >= info.MinImageCount, tprint("image count : %, min image count: %\n", info.ImageCount, info.MinImageCount));
     if (info.UseDynamicRendering == false)
         assert(info.RenderPass != VK_NULL_HANDLE);
         
@@ -435,7 +435,7 @@ ImGui_ImplVulkan_DestroyFontsTexture :: ()
 	{
 		ImGui_ImplVulkan_RemoveTexture(bd.FontDescriptorSet);
 		bd.FontDescriptorSet = VK_NULL_HANDLE;
-		io.Fonts.TexID = cast(*void) 0;
+		io.Fonts.TexID = 0;
 	}
 	
 	if bd.FontView 

@@ -19,7 +19,7 @@ VulkanEngine :: struct
 	swapchain_image_views: [..] VkImageView;
 	swapchain_image_format: VkFormat;
 	swapchain_extent: VkExtent2D;
-	frames: [..] FrameData;
+	frames_in_flight: [..] FrameData;
 	gpu_allocator: VmaAllocator;
 	draw_image: AllocatedImage;
 	draw_extent: VkExtent2D;
@@ -98,7 +98,7 @@ DeleteVulkanEngine :: (vulkan_engine: *VulkanEngine)
 	ImGui_ImplSDL2_Shutdown();
 	ImGui.DestroyContext();
 	
-	for frames 
+	for frames_in_flight
 	{
 		vkDestroyCommandPool(device, it.command_pool, null);
 		vkDestroyFence(device, it.render_fence, null);
@@ -132,7 +132,7 @@ DeleteVulkanEngine :: (vulkan_engine: *VulkanEngine)
 		
 	array_free(swapchain_images);
 	array_free(swapchain_image_views);
-	array_free(frames);
+	array_free(frames_in_flight);
 
 	SDL_DestroyWindow(window);
 	SDL_Quit();
@@ -193,8 +193,9 @@ Draw :: (vulkan_engine: *VulkanEngine, delta_time: float64)
 	using vulkan_engine;
 	
 	ONE_SECOND_IN_NS :: 1000000000;
-	
-	current_frame := GetCurrentFrame(vulkan_engine);
+
+	frame_index := vulkan_engine.frame_number % vulkan_engine.frames_in_flight.count;
+	current_frame := vulkan_engine.frames_in_flight[frame_index];
 	
 	result := vkWaitForFences(device, 1, *current_frame.render_fence, VK_TRUE, ONE_SECOND_IN_NS);
 	assert(result == .SUCCESS, "Could not wait for fences");
@@ -225,6 +226,7 @@ Draw :: (vulkan_engine: *VulkanEngine, delta_time: float64)
 	
 	draw_extent.width = draw_image.image_extent.width;
 	draw_extent.height = draw_image.image_extent.height;
+	
 	
 	result = vkResetCommandPool(device, current_frame.command_pool, 0);
 	assert(result == .SUCCESS, "Could not reset command pool");
@@ -306,15 +308,17 @@ Draw :: (vulkan_engine: *VulkanEngine, delta_time: float64)
 	
 	result = vkEndCommandBuffer(cmd);
 	assert(result == .SUCCESS, "Error while ending command buffer");
+
 	
 	cmd_info := CommandBufferSubmitInfo(cmd);
+
 	wait_info := SemaphoreSubmitInfo(
 		VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT_KHR, 
 		current_frame.swapchain_semaphore
 	);
 	signal_info := SemaphoreSubmitInfo(
 		VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, 
-		current_frame.render_semaphore
+		frames_in_flight[swapchain_image_index].render_semaphore
 	);
 	
 	submit := SubmitInfo(*cmd_info, *signal_info, *wait_info);
@@ -323,7 +327,7 @@ Draw :: (vulkan_engine: *VulkanEngine, delta_time: float64)
 	present_info: VkPresentInfoKHR;
 	present_info.pSwapchains = *swapchain;
 	present_info.swapchainCount = 1;
-	present_info.pWaitSemaphores = *current_frame.render_semaphore;
+	present_info.pWaitSemaphores = *frames_in_flight[swapchain_image_index].render_semaphore;
 	present_info.waitSemaphoreCount = 1;
 	present_info.pImageIndices = *swapchain_image_index;
 	
@@ -339,7 +343,7 @@ Draw :: (vulkan_engine: *VulkanEngine, delta_time: float64)
 
 AllocImGui :: (sz: u64, user_data: *void) -> *void #c_call
 {
-	new_context: Context;
+	new_context: #Context;
 	push_context new_context
 	{
 		return alloc(xx sz);
@@ -348,7 +352,7 @@ AllocImGui :: (sz: u64, user_data: *void) -> *void #c_call
 
 FreeImGui :: (ptr: *void, user_data: *void) #c_call
 {
-	new_context: Context;
+	new_context: #Context;
 	push_context new_context
 	{
 		free(ptr);
@@ -429,7 +433,7 @@ VulkanDebugCallback :: (
 	pUserData: *void
 ) -> VkBool32 #c_call 
 {
-	new_context: Context;
+	new_context: #Context;
 	push_context new_context 
 	{
 		new_context.logger = Logger;
@@ -438,16 +442,16 @@ VulkanDebugCallback :: (
 		if messageSeverity ==
 		{
 			case .VERBOSE_BIT_EXT;
-				log("VULKAN_VALIDATION(VERBOSE): %\n", message, flags = .VERY_VERBOSE_ONLY);
+				log("\nVULKAN_VALIDATION(VERBOSE): %\n", message, flags = .VERY_VERBOSE_ONLY);
 			case .INFO_BIT_EXT;
-				log("VULKAN_VALIDATION(INFO): %\n", message, flags = .VERBOSE_ONLY);
+				log("\nVULKAN_VALIDATION(INFO): %\n", message, flags = .VERBOSE_ONLY);
 			case .WARNING_BIT_EXT;
-				log("VULKAN_VALIDATION(WARNING): %\n", message, flags = .WARNING);
+				log("\nVULKAN_VALIDATION(WARNING): %\n", message, flags = .WARNING);
 			case .ERROR_BIT_EXT;
-				log_error("VULKAN_VALIDATION(ERROR): %\n", message);
-				assert(false);
+				log_error("\nVULKAN_VALIDATION(ERROR): %\n", message);
+				assert(false, "Hit a validation error, exiting...");
 			case;
-				log("VULKAN_VALIDATION(UNKOWN): %\n", message);
+				log("\nVULKAN_VALIDATION(UNKOWN): %\n", message);
 			
 		}
 	}
@@ -1069,7 +1073,7 @@ CreateSwapchain :: (vulkan_engine: *VulkanEngine)
 	swapchain_image_format = surface_format.format;
 	swapchain_extent = extent;
 	
-	array_resize(*frames, image_count);
+	array_resize(*frames_in_flight, image_count);
 }
 
 CreateSwapchainImageViews :: (vulkan_engine: *VulkanEngine)
@@ -1109,13 +1113,12 @@ FrameData :: struct
 	command_pool: VkCommandPool;
 	main_command_buffer: VkCommandBuffer;
 	swapchain_semaphore: VkSemaphore;
+	// TODO: Move render semaphore from frame data, as FrameData is about Frames in flights
+	// and render_semaphore is about swapchain images, which index do not always match.
+	// For example, we could be handling the frame in flight at index 1 but get the 
+	// swapchain image index 2 from vkAcquireNextImageKHR.
 	render_semaphore: VkSemaphore;
 	render_fence: VkFence;
-}
-
-GetCurrentFrame :: (vulkan_engine: *VulkanEngine) -> *FrameData
-{
-	return *vulkan_engine.frames[vulkan_engine.frame_number % vulkan_engine.frames.count];
 }
 
 InitCommands :: (vulkan_engine: *VulkanEngine)
@@ -1126,7 +1129,7 @@ InitCommands :: (vulkan_engine: *VulkanEngine)
 	
 	command_pool_info := CommandPoolCreateInfo(indices.graphics_family, .RESET_COMMAND_BUFFER_BIT);
 	
-	for frames
+	for frames_in_flight
 	{
 		result := vkCreateCommandPool(device, *command_pool_info, null, *it.command_pool);
 		assert(result == .SUCCESS, "Could not create command pool.");
@@ -1145,7 +1148,7 @@ InitSyncStructure :: (vulkan_engine: *VulkanEngine)
 	frence_create_info := FenceCreateInfo(.SIGNALED_BIT);
 	semaphore_create_info := SemaphoreCreateInfo();
 	
-	for frames
+	for frames_in_flight
 	{
 		result := vkCreateFence(device, *frence_create_info, null, *it.render_fence);
 		assert(result == .SUCCESS, "Could not create fence.");
