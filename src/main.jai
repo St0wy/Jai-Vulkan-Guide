@@ -9,7 +9,7 @@
 #import "SDL"(VULKAN = true);
 #import "jai-vulkan";
 #import "jai-vma";
-ImGui :: #import "jai-imgui";
+ImGui :: #import "jai-imgui"(BACKEND_VULKAN = true, BACKEND_SDL2 = true);
 for_expansion :: ImGui.for_expansion;
 
 #load "vk_engine.jai";
@@ -17,8 +17,6 @@ for_expansion :: ImGui.for_expansion;
 #load "vk_utils.jai";
 #load "vk_descriptors.jai";
 #load "utils.jai";
-#load "imgui_backends/imgui_impl_sdl2.jai";
-#load "imgui_backends/imgui_impl_vulkan.jai";
 
 BuildType :: enum u8
 {
