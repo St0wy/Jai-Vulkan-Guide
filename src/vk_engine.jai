@@ -281,25 +281,25 @@ Draw :: (vulkan_engine: *VulkanEngine, delta_time: float64)
 	}
 	
 	ImGui.End();
-    
+	
 	ImGui.Render();
-    
+	
 	draw_data := ImGui.GetDrawData();
 	
 	attachment_info: VkRenderingAttachmentInfo;
-    attachment_info.imageView = swapchain_image_views[swapchain_image_index];
-    attachment_info.imageLayout = .COLOR_ATTACHMENT_OPTIMAL;
-    attachment_info.loadOp = .LOAD;
-    attachment_info.storeOp = .STORE;
+	attachment_info.imageView = swapchain_image_views[swapchain_image_index];
+	attachment_info.imageLayout = .COLOR_ATTACHMENT_OPTIMAL;
+	attachment_info.loadOp = .LOAD;
+	attachment_info.storeOp = .STORE;
 
-    rendering_info: VkRenderingInfo;
-    rendering_info.renderArea.extent = swapchain_extent;
-    rendering_info.layerCount = 1;
-    rendering_info.colorAttachmentCount = 1;
-    rendering_info.pColorAttachments = *attachment_info;
+	rendering_info: VkRenderingInfo;
+	rendering_info.renderArea.extent = swapchain_extent;
+	rendering_info.layerCount = 1;
+	rendering_info.colorAttachmentCount = 1;
+	rendering_info.pColorAttachments = *attachment_info;
 
-    vkCmdBeginRendering(cmd, *rendering_info);
-    
+	vkCmdBeginRendering(cmd, *rendering_info);
+	
 	ImGui_ImplVulkan_RenderDrawData(draw_data, cmd);
 	
 	vkCmdEndRendering(cmd);
@@ -367,11 +367,11 @@ InitImGui :: (vulkan_engine: *VulkanEngine)
 	ImGui.CreateContext();
 	
 	io := ImGui.GetIO();
-    io.ConfigFlags_ |= .NavEnableKeyboard;
-    io.ConfigFlags_ |= .NavEnableGamepad;
-    io.ConfigFlags_ |= .DockingEnable;
-    
-    ImGui.StyleColorsDark();
+	io.ConfigFlags_ |= .NavEnableKeyboard;
+	io.ConfigFlags_ |= .NavEnableGamepad;
+	io.ConfigFlags_ |= .DockingEnable;
+	
+	ImGui.StyleColorsDark();
 	
 	result := ImGui_ImplSDL2_InitForVulkan(vulkan_engine.window);
 	assert(result, "Could not init ImGui SDL2 backend for Vulkan");
@@ -384,24 +384,27 @@ InitImGui :: (vulkan_engine: *VulkanEngine)
 	pipeline_rendering_info: VkPipelineRenderingCreateInfoKHR;
 	pipeline_rendering_info.colorAttachmentCount = 1;
 	pipeline_rendering_info.pColorAttachmentFormats = *swapchain_image_format;
-	
+
+	pipeline_info_main: ImGui_ImplVulkan_PipelineInfo;
+	pipeline_info_main.PipelineRenderingCreateInfo = pipeline_rendering_info;
+	pipeline_info_main.MSAASamples = ._4_BIT;
+
 	init_info: ImGui_ImplVulkan_InitInfo;
-    init_info.Instance = instance;
-    init_info.PhysicalDevice = physical_device;
-    init_info.Device = device;
-    init_info.QueueFamily = indices.graphics_family;
-    init_info.Queue = graphics_queue;
-    init_info.PipelineCache = VK_NULL_HANDLE;
-    init_info.DescriptorPool = imgui_descriptor_pool;
-    init_info.RenderPass = null;
-    init_info.UseDynamicRendering = true;
-    init_info.PipelineRenderingCreateInfo = pipeline_rendering_info;
-    init_info.Subpass = 0;
-    init_info.MinImageCount = xx swapchain_images.count;
-    init_info.ImageCount = xx swapchain_images.count;
-    init_info.MSAASamples = ._1_BIT;
-    init_info.Allocator = null;
-    init_info.CheckVkResultFn = CheckImGuiVkResult;
+	init_info.ApiVersion = VK_API_VERSION_1_4;
+	init_info.Instance = instance;
+	init_info.PhysicalDevice = physical_device;
+	init_info.Device = device;
+	init_info.QueueFamily = indices.graphics_family;
+	init_info.Queue = graphics_queue;
+	init_info.DescriptorPool = imgui_descriptor_pool;
+	init_info.MinImageCount = xx swapchain_images.count;
+	init_info.ImageCount = xx swapchain_images.count;
+	init_info.PipelineInfoMain = pipeline_info_main;
+	init_info.UseDynamicRendering = true;
+	init_info.Allocator = null;
+	init_info.CheckVkResultFn = CheckImGuiVkResult;
+	// To avoid validation layer warnings
+	init_info.MinAllocationSize = 1024 * 1024; 
 	result = ImGui_ImplVulkan_Init(*init_info);
 	assert(result, "Could not init ImGui Vulkan backend");
 
@@ -415,7 +418,7 @@ InitImGui :: (vulkan_engine: *VulkanEngine)
 	
 	font_cfg: ImGui.ImFontConfig;
 	ImGui.ImFontConfig.Constructor(*font_cfg);
-    font_cfg.FontDataOwnedByAtlas = false;
+	font_cfg.FontDataOwnedByAtlas = false;
 	font_cfg.OversampleH = 3;
 	font_cfg.OversampleV = 3;
 	font_cfg.SizePixels = scaled_font_size;
@@ -499,11 +502,11 @@ InitVulkan :: (vulkan_engine: *VulkanEngine) -> bool
 		pool_sizes := VkDescriptorPoolSize.[.{.COMBINED_IMAGE_SAMPLER, 1}];
 		pool_info: VkDescriptorPoolCreateInfo;
 		pool_info.flags = .FREE_DESCRIPTOR_SET_BIT;
-        pool_info.maxSets = 1;
-        pool_info.poolSizeCount = pool_sizes.count;
-        pool_info.pPoolSizes = pool_sizes.data;
-        err := vkCreateDescriptorPool(vulkan_engine.device, *pool_info, null, *vulkan_engine.imgui_descriptor_pool);
-        assert(err == .SUCCESS, "Could not create descriptor pool");
+		pool_info.maxSets = 1;
+		pool_info.poolSizeCount = pool_sizes.count;
+		pool_info.pPoolSizes = pool_sizes.data;
+		err := vkCreateDescriptorPool(vulkan_engine.device, *pool_info, null, *vulkan_engine.imgui_descriptor_pool);
+		assert(err == .SUCCESS, "Could not create descriptor pool");
 	}
 	
 	InitImGui(vulkan_engine);

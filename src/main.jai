@@ -9,8 +9,11 @@
 #import "SDL"(VULKAN = true);
 #import "jai-vulkan";
 #import "jai-vma";
-ImGui :: #import "jai-imgui"(BACKEND_VULKAN = true, BACKEND_SDL2 = true);
+ImGui :: #import "jai-imgui";
 for_expansion :: ImGui.for_expansion;
+operator [] :: ImGui.operator [];
+#load "../modules/jai-imgui/backends/imgui_impl_vulkan.jai";
+#load "../modules/jai-imgui/backends/imgui_impl_sdl2.jai";
 
 #load "vk_engine.jai";
 #load "vk_init.jai";
