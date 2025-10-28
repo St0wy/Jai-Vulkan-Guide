@@ -59,6 +59,7 @@ SDL_ClearError :: () #foreign SDL2;
 #load "SDL_joystick.jai";
 #load "SDL_rect.jai";
 #load "SDL_timer.jai";
+#load "SDL_touch.jai";
 #load "SDL_render.jai";
 #load "SDL_hints.jai";
 #load "SDL_blendmode.jai";

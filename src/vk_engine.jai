@@ -387,7 +387,7 @@ InitImGui :: (vulkan_engine: *VulkanEngine)
 
 	pipeline_info_main: ImGui_ImplVulkan_PipelineInfo;
 	pipeline_info_main.PipelineRenderingCreateInfo = pipeline_rendering_info;
-	pipeline_info_main.MSAASamples = ._4_BIT;
+	pipeline_info_main.MSAASamples = ._1_BIT;
 
 	init_info: ImGui_ImplVulkan_InitInfo;
 	init_info.ApiVersion = VK_API_VERSION_1_4;

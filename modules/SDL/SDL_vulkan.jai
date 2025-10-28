@@ -1,4 +1,4 @@
-
+SDL_HAS_VULKAN :: 1;
 
 SDL_Vulkan_GetInstanceExtensions :: (window: *SDL_Window, pCount: *u32, pNames: **u8) -> SDL_bool #foreign SDL2;
 
