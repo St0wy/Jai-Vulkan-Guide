@@ -55,6 +55,9 @@ BuildDebug :: (w: Workspace)
 {
 	target_options := get_build_options(w);
 	target_options.backend =.X64; 
+	#if CPU == .ARM64 {
+		target_options.backend = .LLVM;
+	}
 	target_options.output_path = BUILD_DEBUG_DIR;
 	set_optimization(*target_options, Optimization_Type.DEBUG, true);
 	set_build_options(target_options, w);
@@ -65,6 +68,9 @@ BuildOptimized :: (w: Workspace)
 {
 	target_options := get_build_options(w);
 	target_options.backend = .X64;
+	#if CPU == .ARM64 {
+		target_options.backend = .LLVM;
+	}
 	target_options.output_path = BUILD_OPTIMIZED_DIR;
 	set_optimization(*target_options, Optimization_Type.OPTIMIZED);   
 	set_build_options(target_options, w);

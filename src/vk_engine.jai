@@ -559,6 +559,10 @@ CreateInstance :: (vulkan_engine: *VulkanEngine) -> bool
 		create_info.enabledLayerCount = 0;
 	}
 
+	#if OS == .MACOS {
+		create_info.flags |= .VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+	}
+
 	result = vkCreateInstance(*create_info, null, *vulkan_engine.instance);
 
 	return result == .SUCCESS;
@@ -628,7 +632,6 @@ GetRequiredExtension :: (vulkan_engine: *VulkanEngine) -> [..] *u8, bool
 	#if OS == .MACOS 
 	{
 		array_add(*required_extensions, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME.data);
-		create_info.flags |= .VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 	}
 
 	#if BUILD_TYPE != .RELEASE
@@ -960,7 +963,12 @@ CreateLogicalDevice :: (vulkan_engine: *VulkanEngine)
 		pNext = *sync2,
 	};
 	
-	extensions :: (*u8).[VK_KHR_SWAPCHAIN_EXTENSION_NAME];
+	#if OS == .MACOS {
+		extensions :: (*u8).[VK_KHR_SWAPCHAIN_EXTENSION_NAME.data, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME.data];
+	}
+	else {
+		extensions :: (*u8).[VK_KHR_SWAPCHAIN_EXTENSION_NAME.data];
+	}
 	
 	create_info: VkDeviceCreateInfo;
 	create_info.pQueueCreateInfos = queue_infos.data;
